@@ -1,0 +1,153 @@
+<html>
+<head>
+<title>EventLogger</title>
+  <HTA:APPLICATION ID="EventLogger" 
+    APPLICATIONNAME="EventLogger" 
+    icon="notepad.exe"
+    BORDER="yes"
+    CAPTION="yes"
+    SHOWINTASKBAR="no"
+    CONTEXTMENU="no"
+    MAXIMIZEBUTTON="no"
+    VERSION="2.1"
+    NAVIGABLE="no"
+    SINGLEINSTANCE="yes"
+    SYSMENU="yes"
+    WINDOWSTATE="normal">
+<meta name="author" content="Ryan Adams" />
+<META HTTP-EQUIV="refresh" CONTENT="5">
+<style type="text/css">
+A:link {text-decoration: none; color: black}
+A:visited {text-decoration: none; color: black}
+A:active {text-decoration: none; color: black}
+A:hover {text-decoration: none; color: black}
+</style>
+
+</head>
+
+<SCRIPT LANGUAGE="VBScript">
+Dim currentFilename
+Dim lastEvent
+Dim lastEventType
+Dim fso
+Dim textFile
+Set fso = CreateObject("Scripting.FileSystemObject")
+Dim weekStartDate
+
+Sub Window_onLoad
+    window.resizeTo 900,700
+    getCurrentWeekDate()
+    setCurrentFilename()
+    displayCurrentWeekDate()
+    displayLog()
+End Sub
+
+Sub setCurrentFilename()
+  currentFilename = Month(weekStartDate) & "-" & Day(weekStartDate) & "-" & Year(weekStartDate) & "-EventLogger.csv"
+  If fso.FileExists(currentFilename) then
+  else
+        Set textFile = fso.OpenTextFile(currentFilename, 8, True)
+        textFile.WriteLine Date & "," & Time & "," & "System" & "," & "Note" & "," & "*** Start of log ***"
+        textFile.Close
+  end if
+End Sub
+
+Sub AddEvent(eventInputType)
+        eventInput = InputBox("Enter " & LCase(eventInputType) & " or leave blank and press 'enter' to exit.", "EventLogger: Record Input")
+            if eventInput <> "" then
+            lastEvent = Replace(Trim(eventInput),",",";")
+            lastEventType = eventInputType
+            WriteFile()
+            end if
+        displayLog()        
+End Sub
+
+Sub WriteFile
+    if lastEvent <> "" then
+        Set textFile = fso.OpenTextFile(currentFilename, 8, True)
+        textFile.WriteLine Date & "," & Time & "," & username & "," & lastEventType & "," & lastEvent
+        textFile.Close
+    end if
+End Sub
+
+Sub displayLog
+    Dim arrFileLines()
+    i = 0
+    Set textFile = fso.OpenTextFile(currentFilename, 1, True)
+        Do Until textFile.AtEndOfStream
+            Redim Preserve arrFileLines(i)
+            arrFileLines(i) = textFile.ReadLine
+            i = i + 1
+        Loop
+    textFile.Close
+        For l = Ubound(arrFileLines) to LBound(arrFileLines) Step -1
+            If InStr(arrFileLines(l), client) <> 0 Then
+                readln = readln & "<tr><td>" & Replace(arrFileLines(l),","," </td><td> ") & "</td></tr>"
+            End If
+        Next
+    LastLines.InnerHTML = "<table border='1' width='100%' class='sortable'><tr><th width='10%'>Date</th><th width='12%'>Time</th><th width='11%'>User</th><th width='7%'>Type</th><th width='60%'>Event</th></tr>" & readln & "</table>"
+End Sub
+
+
+Sub getCurrentWeekDate
+  if Weekday(date) = "1" then
+    weekStartDate = DateAdd("d", -6, date)
+  end if
+  if Weekday(date) = "2" then
+    weekStartDate = date
+  end if
+  if Weekday(date) >= "3" then
+    weekStartDate = DateAdd("d", -(Weekday(date)-2), date)
+  end if
+End Sub
+
+Sub displayCurrentWeekDate()
+  CurrentWeekDate.InnerHTML = "<a href='" & currentFilename & "'>" & weekStartDate & "</a>"
+End Sub
+
+function RemDups(byVal anArray)
+	dim d, item, thekeys
+
+	set d = CreateObject("Scripting.Dictionary")
+	d.removeall
+	d.CompareMode = 0
+	for each item in anArray
+		if not d.Exists(item) then d.Add item, item
+	next
+	thekeys = d.keys
+	set d = nothing
+	RemDups = thekeys
+end function
+
+dim username
+Sub SetUserName() 
+Set objNetwork = CreateObject("WScript.Network") 
+username = objNetwork.UserName 
+Set objNetwork = Nothing 
+End Sub 
+
+
+</SCRIPT>
+
+<body onload="SetUserName()">
+<table border="0" width="100%">
+<tr><TD width="33%" align="left"><b>Log for week of: </b><span id="CurrentWeekDate"></span></td>
+
+
+<TD width="34%" align="center"></td>
+
+
+<TD width="33%" align="right">
+<B>Add Event: </B>
+<input id=runbutton  type="button" value="Issue" name="run_button"  onClick="AddEvent('Issue')" accesskey="I">
+<input id=runbutton  type="button" value="Action" name="run_button"  onClick="AddEvent('Action')" accesskey="A">
+<input id=runbutton  type="button" value="Note" name="run_button"  onClick="AddEvent('Note')" accesskey="N">
+</td></tr>
+</table>
+
+<br>
+<center>
+<span id="LastLines"></span>
+</center>
+
+</body>
